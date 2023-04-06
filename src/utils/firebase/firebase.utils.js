@@ -7,6 +7,9 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
 } from "firebase/auth"; // Libraries pack for authentication
 
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore"; // Libraries pack for DB access
@@ -34,8 +37,10 @@ googleProvider.setCustomParameters({
 
 // Export
 export const auth = getAuth(); // Only one authentication and related rules per app (that's why no keyword 'new' in front)
+
 export const signInWithGooglePopup = () =>
   signInWithPopup(auth, googleProvider);
+
 export const signInWithGoogleRedirect = () =>
   signInWithRedirect(auth, googleProvider);
 
@@ -51,7 +56,10 @@ export const createAuthUserWithEmailAndPassword = async (email, password) => {
 
 // Writing our own methods instead of just using this Google provided method everywhere to minimize the need for changes
 // in case something changes in the functions form FireBase side
-export const createUserDocumentFromAuth = async (userAuth, additionalInformation = {}) => {
+export const createUserDocumentFromAuth = async (
+  userAuth,
+  additionalInformation = {}
+) => {
   if (!userAuth) {
     return;
   }
@@ -64,7 +72,12 @@ export const createUserDocumentFromAuth = async (userAuth, additionalInformation
     const createdAt = new Date();
 
     try {
-      await setDoc(userDocRef, { displayName, email, createdAt, ...additionalInformation });
+      await setDoc(userDocRef, {
+        displayName,
+        email,
+        createdAt,
+        ...additionalInformation,
+      });
     } catch (error) {
       console.log("Error creating the user", error.message);
     }
@@ -72,3 +85,16 @@ export const createUserDocumentFromAuth = async (userAuth, additionalInformation
 
   return userDocRef;
 };
+
+export const signInUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) {
+    return;
+  }
+  return await signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signOutUser = async () => await signOut(auth);
+
+// Helper function to listen for changes in auth states, so that we don't have to track them
+// in different places
+export const onAuthStateChangedListener = (callback) => onAuthStateChanged(auth, callback);
