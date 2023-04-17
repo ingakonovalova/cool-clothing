@@ -16,6 +16,8 @@ export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const value = { currentUser, setCurrentUser };
 
+  // So when this context is initialized, below useEffect will run and attach the listener.
+  // Listener has a callback that will be called every time the auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChangedListener((user) => {
       if (user) {
