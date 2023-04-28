@@ -9,10 +9,20 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "firebase/auth"; // Libraries pack for authentication
 
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore"; // Libraries pack for DB access
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  writeBatch,
+  query,
+  getDocs,
+  QuerySnapshot,
+} from "firebase/firestore"; // Libraries pack for DB access
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -45,6 +55,42 @@ export const signInWithGoogleRedirect = () =>
   signInWithRedirect(auth, googleProvider);
 
 export const db = getFirestore(); // Initializing DB
+
+// Method to add entries to the DB - collectionKey is the key of the collection where you want to add
+export const addCollectionAndDocuments = async (
+  collectionKey,
+  objectsToAdd
+) => {
+  const collectionRef = collection(db, collectionKey);
+
+  // Now we need to batch stuff to the DB
+  const batch = writeBatch(db);
+
+  objectsToAdd.forEach((object) => {
+    const docRef = doc(collectionRef, object.title.toLowerCase());
+    batch.set(docRef, object);
+  });
+
+  await batch.commit();
+  console.log("Done");
+};
+
+// Method to get the categories data from DB, async, because we retrieve from DB
+export const getCategoriesAndDocuments = async () => {
+  const collectionRef = collection(db, "categories");
+
+  const q = query(collectionRef);
+
+  // getDocs is async fetching
+  const querySnapshot = await getDocs(q);
+  const categoryMap = querySnapshot.docs.reduce((acc, docSnapshot) => {
+    const { title, items } = docSnapshot.data();
+    acc[title.toLowerCase()] = items;
+    return acc;
+  }, {});
+
+  return categoryMap;
+};
 
 // Method to handle authentication with email and password
 export const createAuthUserWithEmailAndPassword = async (email, password) => {
@@ -97,4 +143,5 @@ export const signOutUser = async () => await signOut(auth);
 
 // Helper function to listen for changes in auth states, so that we don't have to track them
 // in different places
-export const onAuthStateChangedListener = (callback) => onAuthStateChanged(auth, callback);
+export const onAuthStateChangedListener = (callback) =>
+  onAuthStateChanged(auth, callback);
